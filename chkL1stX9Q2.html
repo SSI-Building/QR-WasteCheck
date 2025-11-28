@@ -225,7 +225,7 @@
         }
     }
 
-function submitData() {
+    function submitData() {
     let message = `ข้อมูลที่บันทึก:
     แดง (อันตราย): ${counts.red}
     เขียว (รีไซเคิล): ${counts.green}
@@ -236,7 +236,12 @@ function submitData() {
 
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
+
+    // สำหรับ Column G = datetime (ISO)
     const dateTimeStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    // สำหรับ Column H = dd/mm/yyyy (Text)
+    const dateOnlyStr = `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()}`;
 
     const payload = {
         A: "1",
@@ -245,7 +250,8 @@ function submitData() {
         D: counts.green,
         E: counts.black,
         F: counts.food,
-        G: dateTimeStr
+        G: dateTimeStr,
+        H: dateOnlyStr
     };
 
     fetch("https://script.google.com/macros/s/AKfycbzKD78PXUC09K0oitJlBHqNq6HAzKz4cVLSSYj-fPJ-FGb_dOwGc8pIV3YYj8RHdBMgkA/exec", {
