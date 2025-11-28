@@ -225,47 +225,43 @@
         }
     }
 
-    function submitData() {
+function submitData() {
     let message = `ข้อมูลที่บันทึก:
     แดง (อันตราย): ${counts.red}
     เขียว (รีไซเคิล): ${counts.green}
     ดำ (ทั่วไป): ${counts.black}
     เศษอาหาร: ${counts.food}`;
 
-        alert(message + '\nกำลังส่งข้อมูลไป Sheet...');
+    alert(message + '\nกำลังส่งข้อมูลไป Sheet...');
 
-        // เตรียมข้อมูลที่จะส่ง
-        const payload = {
-            A: "1",             // หมายเลข
-            B: "โรงจอดรถด้านหน้าป้อม",// พื้นที่
-            C: counts.red,      // ขยะอันตราย
-            D: counts.green,    // รีไซเคิล
-            E: counts.black,    // ขยะทั่วไป
-            F: counts.food,     // เศษอาหาร
-            G: new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" }) // วันที่/เวลา ไทย
-        };
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateTimeStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
-        // ส่งข้อมูลไป Google Apps Script Web App
-        fetch("https://script.google.com/macros/s/AKfycbzKD78PXUC09K0oitJlBHqNq6HAzKz4cVLSSYj-fPJ-FGb_dOwGc8pIV3YYj8RHdBMgkA/exec", {
-            method: "POST",
-            mode: "no-cors", // ป้องกันปัญหา CORS, browser จะไม่อ่าน response
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload)
-        }).then(() => {
-            alert("ส่งข้อมูลเรียบร้อยแล้ว!");
-            // ปิดหน้าต่าง
-            try {
-                window.close();
-            } catch(e) {
-                console.log("เบราว์เซอร์ไม่อนุญาตให้ปิดหน้านี้โดยตรง");
-            }
-        }).catch(err => {
-            console.error(err);
-            alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
-        });
-    }
+    const payload = {
+        A: "1",
+        B: "โรงจอดรถด้านหน้าป้อม",
+        C: counts.red,
+        D: counts.green,
+        E: counts.black,
+        F: counts.food,
+        G: dateTimeStr
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbzKD78PXUC09K0oitJlBHqNq6HAzKz4cVLSSYj-fPJ-FGb_dOwGc8pIV3YYj8RHdBMgkA/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        alert("ส่งข้อมูลเรียบร้อยแล้ว!");
+        try { window.close(); } catch(e) { console.log(e); }
+    }).catch(err => {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการส่งข้อมูล");
+    });
+}
+
 
     
         // เนื่องจากผมไม่มี Base64 จริง ๆ ผมจะใช้ Placeholder แทน หากคุณใส่ Base64 จริงลงไปจะแสดงผลตามปกติ
