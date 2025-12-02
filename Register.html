@@ -1,78 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Register User</title>
-
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ลงทะเบียนผู้ใช้ - QR WasteCheck</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body {
-    font-family: sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background: #f5f5f5;
-}
-#box {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 350px;
-    text-align: center;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
-}
+body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+h1 { color: #333; text-align: center; }
+#register-card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); width: 100%; max-width: 400px; text-align: center; }
+#user-info { margin-top: 20px; display: none; }
+button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 12px; background: linear-gradient(45deg,#28a745,#1e7e34); color: white; cursor: pointer; }
+button:hover { opacity: 0.9; }
 </style>
 </head>
-
 <body>
-<div id="box">
-    <h2>ลงทะเบียนผู้ใช้</h2>
 
-    <!-- ปุ่ม Sign in with Google -->
-    <div id="gSignIn"></div>
-
-    <p id="result" style="margin-top:15px; color:green; font-weight:bold;"></p>
+<div id="register-card">
+  <h1>ลงทะเบียนผู้ใช้ QR WasteCheck</h1>
+  
+  <!-- Google Sign-In button -->
+  <div id="g_id_onload"
+       data-client_id="920053039488-npt2d4dqoqf1c2372qdctlult37tam47.apps.googleusercontent.com"
+       data-login_uri="https://ssi-building.github.io/QR-WasteCheck/Register.html"
+       data-auto_prompt="false">
+  </div>
+  <div class="g_id_signin" data-type="standard"></div>
+  
+  <div id="user-info">
+    <p><strong>Email:</strong> <span id="user-email"></span></p>
+    <p><strong>Name:</strong> <span id="user-name"></span></p>
+    <button onclick="registerUser()">ลงทะเบียน</button>
+  </div>
 </div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+let userEmail = '';
+let userName = '';
+
+// ฟังก์ชัน callback เมื่อผู้ใช้ Sign-In สำเร็จ
 function handleCredentialResponse(response) {
-    const data = parseJwt(response.credential);
-
-    const email = data.email;
-    const name  = data.name;
-
-    // ส่งข้อมูลไป Apps Script
-    fetch("https://script.google.com/macros/s/AKfycbzXgbcoyebiSeGzf22jcT-LaEWDJF8zdnKTBHGk_qunGypUDcDby-ZQ-xNzFwGyh6BO/exec?email=" 
-          + encodeURIComponent(email) 
-          + "&name=" + encodeURIComponent(name))
-    .then(res => res.json())
-    .then(r => {
-        document.getElementById("result").textContent = "ลงทะเบียนสำเร็จ!";
-    })
-    .catch(err => alert("ส่งข้อมูลไม่สำเร็จ: " + err));
-}
-
-// อ่านข้อมูล Google JWT
-function parseJwt(token) {
-    const base64Url = token.split('.')[1];
+    const jwt = response.credential;
+    const base64Url = jwt.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(decodeURIComponent(escape(atob(base64))));
+    const payload = JSON.parse(window.atob(base64));
+
+    userEmail = payload.email;
+    userName = payload.name;
+
+    document.getElementById('user-email').innerText = userEmail;
+    document.getElementById('user-name').innerText = userName;
+    document.getElementById('user-info').style.display = 'block';
 }
 
-// โหลดปุ่ม Google Sign-In
-window.onload = function () {
+// เรียกฟังก์ชันลงทะเบียนผู้ใช้ไปยัง Google Sheet
+function registerUser() {
+    if (!userEmail) return alert("กรุณา Sign in ก่อน");
+
+    const payload = {
+        email: userEmail,
+        name: userName,
+        status: "Waiting"
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbXgbcoyebiSeGzf22jcT-LaEWDJF8zdnKTBHGk_qunGypUDcDby-ZQ-xNzFwGyh6BO/exec", {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    }).then(() => {
+        alert("ลงทะเบียนเรียบร้อยแล้ว!");
+    }).catch(err => {
+        console.error(err);
+        alert("เกิดข้อผิดพลาดในการลงทะเบียน");
+    });
+}
+
+// เปิด Google Sign-In
+window.onload = function() {
     google.accounts.id.initialize({
-        client_id: "YOUR_CLIENT_ID",
+        client_id: "920053039488-npt2d4dqoqf1c2372qdctlult37tam47.apps.googleusercontent.com",
         callback: handleCredentialResponse
     });
     google.accounts.id.renderButton(
-        document.getElementById("gSignIn"),
-        { theme: "filled_blue", size: "large", shape: "pill" }
+        document.querySelector(".g_id_signin"),
+        { theme: "outline", size: "large", width: 240 }
     );
-};
+}
 </script>
 
 </body>
