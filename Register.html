@@ -1,87 +1,209 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ลงทะเบียนผู้ใช้ - QR WasteCheck</title>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-body { font-family: 'Sarabun', sans-serif; background-color: #f0f2f5; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-h1 { color: #333; text-align: center; }
-#register-card { background: #fff; padding: 20px; border-radius: 16px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); width: 100%; max-width: 400px; text-align: center; }
-#user-info { margin-top: 20px; display: none; }
-button { padding: 12px 20px; font-size: 16px; border: none; border-radius: 12px; background: linear-gradient(45deg,#28a745,#1e7e34); color: white; cursor: pointer; }
-button:hover { opacity: 0.9; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ลงทะเบียนสมาชิก</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background-color: white;
+            width: 90%;
+            max-width: 400px;
+            padding: 40px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* พื้นที่สำหรับปุ่ม Google */
+        #buttonDiv {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none; /* ซ่อนไว้ก่อน */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Message Box */
+        #message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .profile-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            display: none;
+            margin-left: auto;
+            margin-right: auto;
+        }
+    </style>
 </head>
 <body>
 
-<div id="register-card">
-  <h1>ลงทะเบียนผู้ใช้ QR WasteCheck</h1>
-  
-  <div id="g_id_onload"
-       data-client_id="920053039488-npt2d4dqoqf1c2372qdctlult37tam47.apps.googleusercontent.com"
-       data-login_uri="https://ssi-building.github.io/QR-WasteCheck/Register.html"
-       data-auto_prompt="false">
-  </div>
-  <div class="g_id_signin" data-type="standard"></div>
-  
-  <div id="user-info">
-    <p><strong>Email:</strong> <span id="user-email"></span></p>
-    <p><strong>Name:</strong> <span id="user-name"></span></p>
-    <button onclick="registerUser()">ลงทะเบียน</button>
-  </div>
-</div>
+    <div class="container">
+        <img id="userIcon" src="https://cdn-icons-png.flaticon.com/512/295/295128.png" alt="Login Icon" style="width: 60px; margin-bottom: 10px;">
+        <img id="profilePic" class="profile-img" alt="Profile">
+        
+        <h1 id="titleText">ลงทะเบียน</h1>
+        <p id="subText">เข้าสู่ระบบด้วยบัญชี Google เพื่อลงทะเบียนใช้งาน</p>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-let userEmail = '';
-let userName = '';
+        <div id="buttonDiv"></div>
 
-// ฟังก์ชัน callback เมื่อผู้ใช้ Sign-In สำเร็จ
-function handleCredentialResponse(response) {
-    const jwt = response.credential;
-    const base64Url = jwt.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const payload = JSON.parse(window.atob(base64));
+        <div class="loader" id="loader"></div>
 
-    userEmail = payload.email;
-    userName = payload.name;
+        <div id="message"></div>
+    </div>
 
-    document.getElementById('user-email').innerText = userEmail;
-    document.getElementById('user-name').innerText = userName;
-    document.getElementById('user-info').style.display = 'block';
-}
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <script>
+        // *** ตั้งค่า URL ของ Apps Script ที่ได้จากการ Deploy ตรงนี้ ***
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzXgbcoyebiSeGzf22jcT-LaEWDJF8zdnKTBHGk_qunGypUDcDby-ZQ-xNzFwGyh6BO/exec'; 
 
-// ฟังก์ชันส่งข้อมูลลง Sheet
-function registerUser() {
-    if (!userEmail) return alert("กรุณา Sign in ก่อน");
+        function handleCredentialResponse(response) {
+            // เมื่อ User ล็อกอินสำเร็จ Google จะส่ง JWT Token มา
+            const responsePayload = decodeJwtResponse(response.credential);
 
-    const url = `https://script.google.com/macros/s/AKfycbXgbcoyebiSeGzf22jcT-LaEWDJF8zdnKTBHGk_qunGypUDcDby-ZQ-xNzFwGyh6BO/exec?email=${encodeURIComponent(userEmail)}&name=${encodeURIComponent(userName)}`;
+            console.log("ID: " + responsePayload.sub);
+            console.log("Full Name: " + responsePayload.name);
+            console.log("Email: " + responsePayload.email);
 
-    // ใช้ no-cors เพราะ Web App ไม่ได้อนุญาต CORS
-    fetch(url, { mode: 'no-cors' })
-      .then(() => {
-          alert("ลงทะเบียนเรียบร้อยแล้ว!");
-      })
-      .catch(err => {
-          console.error(err);
-          alert("เกิดข้อผิดพลาดในการลงทะเบียน");
-      });
-}
+            // แสดง UI ว่ากำลังโหลด
+            document.getElementById("buttonDiv").style.display = "none";
+            document.getElementById("loader").style.display = "block";
+            
+            // ส่งข้อมูลไปบันทึก
+            saveToSheet(responsePayload.email, responsePayload.name, responsePayload.picture);
+        }
 
-// เรียก Google Sign-In
-window.onload = function() {
-    google.accounts.id.initialize({
-        client_id: "920053039488-npt2d4dqoqf1c2372qdctlult37tam47.apps.googleusercontent.com",
-        callback: handleCredentialResponse
-    });
-    google.accounts.id.renderButton(
-        document.querySelector(".g_id_signin"),
-        { theme: "outline", size: "large", width: 240 }
-    );
-}
-</script>
+        function saveToSheet(email, name, picture) {
+            // ส่งข้อมูลแบบ POST ไปยัง Apps Script
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', // สำคัญ: ใช้ no-cors เพื่อเลี่ยงปัญหา Cross-origin แต่จะอ่าน response ตรงๆ ไม่ได้
+                headers: {
+                    'Content-Type': 'text/plain' // ใช้ text/plain เพื่อให้ Apps Script อ่านง่ายที่สุด
+                },
+                body: JSON.stringify({
+                    email: email,
+                    name: name
+                })
+            })
+            .then(() => {
+                // เนื่องจากใช้ no-cors เราจะ assume ว่าสำเร็จถ้าไม่มี error network
+                // หรือถ้าต้องการความชัวร์ ต้อง setup domain ให้ถูกต้อง แต่แบบนี้ง่ายสุดสำหรับเริ่มต้น
+                showSuccess(name, picture);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+            });
+        }
 
+        function showSuccess(name, picture) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("userIcon").style.display = "none";
+            
+            // โชว์รูปโปรไฟล์
+            const profilePic = document.getElementById("profilePic");
+            profilePic.src = picture;
+            profilePic.style.display = "block";
+
+            document.getElementById("titleText").innerText = "ลงทะเบียนสำเร็จ";
+            document.getElementById("subText").innerText = "ยินดีต้อนรับคุณ " + name;
+            
+            const msg = document.getElementById("message");
+            msg.className = "success";
+            msg.innerText = "บันทึกข้อมูลเข้าสู่ระบบเรียบร้อยแล้ว สถานะ: Waiting";
+            msg.style.display = "block";
+        }
+
+        function showError(text) {
+            document.getElementById("loader").style.display = "none";
+            document.getElementById("buttonDiv").style.display = "flex"; // ให้กดใหม่
+            
+            const msg = document.getElementById("message");
+            msg.className = "error";
+            msg.innerText = text;
+            msg.style.display = "block";
+        }
+
+        // ฟังก์ชั่นแกะรหัส JWT (ไม่ต้องใช้ Library นอก)
+        function decodeJwtResponse(token) {
+            var base64Url = token.split('.')[1];
+            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            return JSON.parse(jsonPayload);
+        }
+
+        window.onload = function () {
+            google.accounts.id.initialize({
+                client_id: "920053039488-npt2d4dqoqf1c2372qdctlult37tam47.apps.googleusercontent.com",
+                callback: handleCredentialResponse
+            });
+            google.accounts.id.renderButton(
+                document.getElementById("buttonDiv"),
+                { theme: "outline", size: "large", width: 250 }  // ปรับแต่งปุ่ม
+            );
+            // google.accounts.id.prompt(); // ถ้าอยากให้เด้ง Auto Login
+        }
+    </script>
 </body>
 </html>
